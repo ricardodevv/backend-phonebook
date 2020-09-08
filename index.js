@@ -42,7 +42,7 @@ app.get('/api/info', (request, response) => {
   response.send(`Phonebook has info for ${ids} people </br> ${d}`)
 })
  
-app.get('/api/people/:id', (request, response) => {
+app.get('/api/peps/:id', (request, response) => {
   const id = Number(request.params.id) 
   const person = peps.find(el => el.id === id)
 
