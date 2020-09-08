@@ -92,7 +92,7 @@ app.post('/api/peps', (request, response) => {
   }
 })
 
-const PORT = process.env.PORT || 3003
+const PORT = 3001 || process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
