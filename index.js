@@ -1,6 +1,8 @@
+require('dotenv').config()
 const express = require('express')
-const cors = require('cors')
 const app = express()
+const Phone = require('./models/contacts')
+const cors = require('cors')
 
 app.use(express.json())
 app.use(cors())
@@ -29,7 +31,9 @@ app.get('/', (request, response) => {
 })
 
 app.get('/api/peps', (request, response) => {
-  response.json(peps)
+  Phone.find({}).then(contacts => {
+    response.json(contacts)
+  })
 })
 
 app.get('/api/info', (request, response) => {
@@ -43,16 +47,19 @@ app.get('/api/info', (request, response) => {
 })
  
 app.get('/api/peps/:id', (request, response) => {
-  const id = Number(request.params.id) 
-  const person = peps.find(el => el.id === id)
-
-  if (person) {
-    response.json(person)
-  } else {
-    response.status(404).end()
-  } 
+  Phone.findById(request.params.id).then(contact => {
+    if (contact) {
+      response.json(contact)
+    } else {
+      response.status(404).end()
+    } 
+  })
+  .catch(error => {
+    console.log(error)
+    response.status(400).send({ error: 'malformatted id' })
+  })
 })
-
+  
 app.delete('/api/peps/:id', (request, response) => {
   const id = request.params.id
   people = peps.filter(el => el.id !== id)
@@ -70,11 +77,10 @@ const generateId = (min, max) => {
 app.post('/api/peps', (request, response) => {
   const body = request.body
 
-  const person = {
+  const person = new Phone({
     name: body.name,
     phone: body.phone,
-    id: generateId(3, 3000),
-  }
+  })
 
   const ifExist = peps.find(el => el.name === person.name)
 
@@ -87,12 +93,13 @@ app.post('/api/peps', (request, response) => {
       error: 'No number typed'
     })
   } else {
-    peps = peps.concat(person)
-    response.json(person)
+    person.save().then(savedPerson => {
+      response.json(savedPerson)
+    })
   }
 })
 
-const PORT = process.env.PORT || 3001
+const PORT = process.env.PORT
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`)
 })
