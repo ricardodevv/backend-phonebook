@@ -1,4 +1,7 @@
-GET http://localhost:3001/api/peps/5c41c90e84d891c15dfa3431
+POST http://localhost:3001/api/peps
 Content-Type: application/json
 
-{"name": "Ricardo", "phone": "45454"}
+{ 
+    "name": "s", 
+    "phone": "90787797"
+}

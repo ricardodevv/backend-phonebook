@@ -1,80 +1,41 @@
-require('dotenv').config()
 const express = require('express')
 const app = express()
+require('dotenv').config()
 const Phone = require('./models/contacts')
+
 const cors = require('cors')
 
-app.use(express.json())
 app.use(cors())
+app.use(express.json())
 app.use(express.static('build'))
-
-let peps = [
-    {
-      "name": "Arto Hellas",
-      "phone": "040-445-868",
-      "id": 1
-    },
-    {
-      "name": "Ada Lovelace",
-      "phone": "39-89-88-787",
-      "id": 2
-    },
-    {
-      "name": "Pieck Fortune",
-      "phone": "58-884-784",
-      "id": 3
-    }
-  ]
-
-app.get('/', (request, response) => {
-  response.send('<h1>Home Page</h1>')
-})
 
 app.get('/api/peps', (request, response) => {
   Phone.find({}).then(contacts => {
-    response.json(contacts)
+    response.json(contacts.map(contact => contact.toJSON()))
   })
 })
 
-app.get('/api/info', (request, response) => {
-  const ids = peps.length > 0
-    ? Math.max(...peps.map(p => p.id))
-    : 0 
-  
-  const d = new Date()
-  
-  response.send(`Phonebook has info for ${ids} people </br> ${d}`)
-})
- 
-app.get('/api/peps/:id', (request, response) => {
+app.get('/api/peps/:id', (request, response, next) => {
   Phone.findById(request.params.id).then(contact => {
     if (contact) {
-      response.json(contact)
+      response.json(contact.toJSON())
     } else {
       response.status(404).end()
-    } 
+    }
   })
-  .catch(error => {
-    console.log(error)
-    response.status(400).send({ error: 'malformatted id' })
-  })
-})
-  
-app.delete('/api/peps/:id', (request, response) => {
-  const id = request.params.id
-  people = peps.filter(el => el.id !== id)
-
-  response.status(204).end()
+    .catch(error => next(error))
 })
 
-const generateId = (min, max) => {
-  min = Math.ceil(min)
-  max = Math.floor(max)
-  const randm = Math.floor(Math.random() * (max - min + 1) + min)
-  return randm
-}
+app.delete('/api/peps/:id', (request, response, next) => {
+  Phone.findByIdAndRemove(request.params.id)
+    // eslint-disable-next-line no-unused-vars
+    .then(result => {
+      response.status(204).end()
+    })
+    .catch(error => next(error))
+})
 
-app.post('/api/peps', (request, response) => {
+app.post('/api/peps', (request, response, next) => {
   const body = request.body
 
   const person = new Phone({
@@ -82,22 +43,45 @@ app.post('/api/peps', (request, response) => {
     phone: body.phone,
   })
 
-  const ifExist = peps.find(el => el.name === person.name)
-
-  if (!person.name) {
-    return response.status(400).json({
-      error: 'No name typed'
+  person
+    .save()
+    .then(savedPerson => savedPerson.toJSON())
+    .then(savedAndFormattedNote => {
+      response.json(savedAndFormattedNote)
     })
-  } else if (!person.phone) {
-    return response.status(400).json({
-      error: 'No number typed'
-    })
-  } else {
-    person.save().then(savedPerson => {
-      response.json(savedPerson)
-    })
-  }
+    .catch(error => next(error))
 })
+
+app.put('/api/peps/:id', (request, response, next) => {
+  const body = request.body
+  const id = request.params.id
+
+  const person = {
+    name: body.name,
+    phone: body.phone,
+  }
+
+  Phone.findByIdAndUpdate(id, person, { new: true })
+    .then(updatedPerson => {
+      response.json(updatedPerson)
+    })
+    .catch(error => next(error))
+
+})
+
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } else if (error.name === 'ValidationError') {
+    return response.status(400).json({ error: error.message })
+  }
+
+  next(error)
+}
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT
 app.listen(PORT, () => {
