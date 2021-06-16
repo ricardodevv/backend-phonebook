@@ -9,7 +9,7 @@ const password = process.argv[2]
 const name = process.argv[3]
 const phone = process.argv[4]
 
-const url = `mongodb+srv://ricardoaqf:${password}@gettingstarted.3qndk.mongodb.net/phonebook-app?retryWrites=true&w=majority`
+const url = `mongodb+srv://ricardoaqf:<${password}>@blog-cluster.7widi.mongodb.net/Phonebook?retryWrites=true&w=majority`
 
 mongoose.connect(url, { useNewUrlParser: true, useUnifiedTopology: true })
 
